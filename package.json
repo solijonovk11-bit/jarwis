@@ -1,16 +1,13 @@
 {
   "name": "jarvis-ai",
   "version": "2.0.0",
-  "description": "JARVIS AI — Shaxsiy Intellektual Yordamchi (Futuristik 3D, Ikki Qo'l Imo-Ishoralari, O'zbek Ovozli Yordamchi, Windows Agent va Supabase)",
+  "description": "JARVIS AI — Shaxsiy Intellektual Yordamchi (Bitta Havolada: UI, AI va Windows Agent)",
   "private": true,
   "scripts": {
-    "start": "concurrently -k -n \"AGENT,BACKEND,FRONTEND\" -c \"magenta,blue,cyan\" \"python -m uvicorn agent.main:app --host 127.0.0.1 --port 8001 --app-dir windows-agent\" \"python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --app-dir backend\" \"npm run dev --prefix frontend\"",
-    "dev": "npm start",
-    "frontend": "npm run dev --prefix frontend",
-    "backend": "python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --app-dir backend",
-    "agent": "python -m uvicorn agent.main:app --host 127.0.0.1 --port 8001 --app-dir windows-agent",
-    "build": "npm run build --prefix frontend",
-    "install:all": "npm install && npm install --prefix frontend && python -m pip install -r backend/requirements.txt && python -m pip install -r windows-agent/requirements.txt"
+    "start": "python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --app-dir backend",
+    "serve": "python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --app-dir backend",
+    "dev": "concurrently -k -n \"BACKEND,FRONTEND\" -c \"blue,cyan\" \"python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --app-dir backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix frontend"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

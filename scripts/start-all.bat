@@ -1,23 +1,12 @@
 @echo off
-title JARVIS AI Tizimi
+title JARVIS AI (Bitta Manzilda: http://localhost:8000)
 echo ========================================================
-echo               JARVIS AI MARK VII - ALL SERVICES
+echo       JARVIS AI MARK VII - ALL-IN-ONE (BITTA LINKDA)
 echo ========================================================
 echo.
-echo 1. Windows Agent ishga tushirilmoqda (127.0.0.1:8001)...
-start "JARVIS Windows Agent" cmd /c "%~dp0\..\windows-agent\start-agent.bat"
-
-echo 2. AI Backend ishga tushirilmoqda (127.0.0.1:8000)...
-start "JARVIS Backend" cmd /c "%~dp0start-backend.bat"
-
-timeout /t 3 /nobreak >nul
-
-echo 3. Frontend ishga tushirilmoqda (http://localhost:5173)...
-start "JARVIS Frontend" cmd /c "%~dp0start-frontend.bat"
-
-echo.
-echo Barcha modullar ishga tushirildi! Brauzerda http://localhost:5173 ochilmoqda...
+cd /d "%~dp0\.."
+echo Tizim ishga tushirilmoqda: http://localhost:8000 ...
 timeout /t 2 /nobreak >nul
-start http://localhost:5173
-echo.
+start http://localhost:8000
+npm start
 pause

@@ -1,26 +1,34 @@
 import { WindowsAgentStatus } from '../types';
 
-const AGENT_BASE = 'http://127.0.0.1:8001';
+// Bitta manzil rejimida /api/agent ga so'rov yuboriladi, agar bo'lmasa 8001 portga
+const UNIFIED_AGENT_BASE = '/api/agent';
+const FALLBACK_AGENT_BASE = 'http://127.0.0.1:8001';
+
+async function tryFetchAgent(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  try {
+    const res = await fetch(`${UNIFIED_AGENT_BASE}${endpoint}`, options);
+    if (res.ok || res.status === 400 || res.status === 401) return res;
+  } catch {}
+  return await fetch(`${FALLBACK_AGENT_BASE}${endpoint}`, options);
+}
 
 export async function fetchAgentStatus(): Promise<WindowsAgentStatus> {
   try {
-    const healthRes = await fetch(`${AGENT_BASE}/health`, { signal: AbortSignal.timeout(2000) });
+    const healthRes = await tryFetchAgent('/health', { signal: AbortSignal.timeout(2000) });
     if (!healthRes.ok) throw new Error('Agent offline');
     
-    // Tokenni olishga urinish
     let token = '';
     try {
-      const tokenRes = await fetch(`${AGENT_BASE}/token-info`, { signal: AbortSignal.timeout(2000) });
+      const tokenRes = await tryFetchAgent('/token-info', { signal: AbortSignal.timeout(2000) });
       if (tokenRes.ok) {
         const tokenData = await tokenRes.json();
         token = tokenData.token;
       }
     } catch {}
 
-    // Tizim parametrlarini olish
     let metrics: any = {};
     try {
-      const infoRes = await fetch(`${AGENT_BASE}/system-info`, { signal: AbortSignal.timeout(2000) });
+      const infoRes = await tryFetchAgent('/system-info', { signal: AbortSignal.timeout(2000) });
       if (infoRes.ok) {
         metrics = await infoRes.json();
       }
@@ -39,7 +47,7 @@ export async function fetchAgentStatus(): Promise<WindowsAgentStatus> {
   } catch (err: any) {
     return {
       running: false,
-      error: 'Windows agenti ishga tushmagan (127.0.0.1:8001)'
+      error: 'Windows agenti nofaol'
     };
   }
 }
@@ -57,7 +65,7 @@ export async function launchWindowsAction(
       headers['X-Jarvis-Token'] = token;
     }
 
-    const res = await fetch(`${AGENT_BASE}/actions/launch`, {
+    const res = await tryFetchAgent('/actions/launch', {
       method: 'POST',
       headers,
       body: JSON.stringify({ action, payload }),

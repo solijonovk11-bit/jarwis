@@ -1,6 +1,6 @@
-import { ChatMessageItem, SystemMetrics } from '../types';
+import { ChatMessageItem } from '../types';
 
-const BACKEND_BASE = 'http://localhost:8000';
+const BACKEND_BASE = '';
 
 export async function checkBackendHealth(): Promise<{ online: boolean; aiConfigured: boolean; provider: string; model: string }> {
   try {
@@ -52,10 +52,9 @@ export async function sendChatMessage(message: string, sessionId = 'default'): P
       actionPayload: data.action_payload
     };
   } catch (err: any) {
-    // Agar backend ishlamayotgan bo'lsa yoki xatolik bo'lsa
     console.warn('Backend bilan bog\'lanishda xatolik:', err);
     return {
-      reply: `Janob, backend serveri (${BACKEND_BASE}) bilan aloqa uzilgan yoki javob bermadi. Iltimos, backend/main.py ishlayotganligini tekshiring.`,
+      reply: `Janob, server bilan aloqa uzilgan yoki javob bermadi. Iltimos, server ishlayotganligini tekshiring.`,
       provider: 'offline-fallback',
       model: 'none'
     };
