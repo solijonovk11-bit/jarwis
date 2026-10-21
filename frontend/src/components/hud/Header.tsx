@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Cpu, Activity, Volume2, VolumeX, Settings, Radio } from 'lucide-react';
+import { Shield, Cpu, Activity, Volume2, VolumeX, Settings, Radio, Cloud } from 'lucide-react';
 import { AssistantState } from '../../types';
 
 interface HeaderProps {
@@ -10,6 +10,7 @@ interface HeaderProps {
   provider: string;
   fps: number;
   isMuted: boolean;
+  supabaseOnline?: boolean;
   onToggleMute: () => void;
   onOpenSettings: () => void;
 }
@@ -22,6 +23,7 @@ export function Header({
   provider,
   fps,
   isMuted,
+  supabaseOnline = false,
   onToggleMute,
   onOpenSettings,
 }: HeaderProps) {
@@ -85,6 +87,19 @@ export function Header({
 
       {/* Telemetry Status Pills & Actions */}
       <div className="flex items-center space-x-2 sm:space-x-3 text-xs">
+        {/* Supabase Cloud Sync Badge */}
+        <div
+          title={supabaseOnline ? 'Supabase Bulut sinxronizatsiyasi faol' : 'Supabase ulanmagan'}
+          className={`hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded border ${
+            supabaseOnline
+              ? 'border-emerald-500/40 text-emerald-400 bg-emerald-950/20 shadow-[0_0_8px_rgba(16,185,129,0.25)]'
+              : 'border-cyan-500/20 text-cyan-400/50 bg-black/20'
+          }`}
+        >
+          <Cloud className={`w-3 h-3 ${supabaseOnline ? 'text-emerald-400 animate-pulse' : 'text-cyan-500/40'}`} />
+          <span className="font-mono">CLOUD: {supabaseOnline ? 'SYNCED' : 'OFFLINE'}</span>
+        </div>
+
         {/* Backend Status */}
         <div
           title={backendOnline ? 'FastAPI Backend faol' : 'Backend uzilgan'}

@@ -12,6 +12,11 @@ import { useVoiceAssistant } from './hooks/useVoiceAssistant';
 import { checkBackendHealth, sendChatMessage, fetchHistory, clearChatHistory } from './services/api';
 import { fetchAgentStatus } from './services/agentApi';
 import {
+  checkSupabaseConnection,
+  saveMessageToSupabase,
+  fetchSupabaseHistory,
+} from './services/supabase';
+import {
   AssistantState,
   ChatMessageItem,
   DrawShape,
@@ -31,6 +36,7 @@ export function App() {
   const [aiModel, setAiModel] = useState<string>('Yuklanmoqda');
   const [agentStatus, setAgentStatus] = useState<WindowsAgentStatus>({ running: false });
   const [agentToken, setAgentToken] = useState<string>('');
+  const [supabaseOnline, setSupabaseOnline] = useState<boolean>(false);
 
   // Modals
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
@@ -89,7 +95,6 @@ export function App() {
     let finalPoints = points;
 
     if (shape === 'circle' && points.length >= 3) {
-      // Calculate center and radius
       const start = points[0];
       const end = points[points.length - 1];
       const r = Math.hypot(end[0] - start[0], end[1] - start[1]) / 2;
@@ -174,13 +179,8 @@ export function App() {
   // Interaction 3 & 4: TWO HAND TRANSFORM (Scale, Rotate, Translate)
   const handleTwoHandTransform = useCallback(
     (distanceDelta: number, angleDelta: number, centerDelta: [number, number, number]) => {
-      // 1. Distance changes -> Scale reactor
       setReactorScale((prev) => Math.max(0.4, Math.min(3.0, prev + distanceDelta * 3.5)));
-
-      // 2. Angle changes -> Rotate reactor
       setReactorRotation((prev) => [prev[0], prev[1], prev[2] + angleDelta * 1.5]);
-
-      // 3. Movement of both hands -> Shift reactor position
       setReactorPosition((prev) => [
         Math.max(-3, Math.min(3, prev[0] + centerDelta[0] * 0.3)),
         Math.max(-2, Math.min(2, prev[1] + centerDelta[1] * 0.3)),
@@ -251,7 +251,7 @@ export function App() {
     }
   }, [isSpeaking, isListening, isCameraActive, detectedHands.length]);
 
-  // --- 6. Send Message to AI Backend ---
+  // --- 6. Send Message to AI Backend & Supabase Cloud Sync ---
   const handleSendMessage = async (text: string) => {
     const userMsg: ChatMessageItem = {
       id: `msg-${Date.now()}`,
@@ -261,6 +261,9 @@ export function App() {
     };
     setMessages((prev) => [...prev, userMsg]);
     setAssistantState('thinking');
+
+    // Supabase bulutiga ham parallel sinxronizatsiya
+    saveMessageToSupabase('user', text);
 
     const res = await sendChatMessage(text);
 
@@ -273,6 +276,9 @@ export function App() {
       actionPayload: res.actionPayload,
     };
     setMessages((prev) => [...prev, botMsg]);
+
+    // Supabase bulutiga javobni yozish
+    saveMessageToSupabase('assistant', res.reply);
 
     // Speak response out loud in Uzbek!
     speakText(res.reply);
@@ -294,7 +300,7 @@ export function App() {
     }
   };
 
-  // --- 7. Periodic Polling for Health and Windows Agent ---
+  // --- 7. Periodic Polling for Health, Windows Agent & Supabase Cloud ---
   const checkTelemetry = async () => {
     // 1. Backend check
     const bHealth = await checkBackendHealth();
@@ -309,13 +315,23 @@ export function App() {
     if (aHealth.token) {
       setAgentToken(aHealth.token);
     }
+
+    // 3. Supabase Cloud ping check
+    const sConn = await checkSupabaseConnection();
+    setSupabaseOnline(sConn.connected);
   };
 
   useEffect(() => {
     checkTelemetry();
-    // Load initial chat history
-    fetchHistory().then((hist) => {
-      if (hist.length > 0) setMessages(hist);
+
+    // Load initial chat history from backend SQLite or Supabase
+    fetchHistory().then(async (hist) => {
+      if (hist.length > 0) {
+        setMessages(hist);
+      } else {
+        const cloudHist = await fetchSupabaseHistory();
+        if (cloudHist.length > 0) setMessages(cloudHist);
+      }
     });
 
     const interval = setInterval(checkTelemetry, 6000);
@@ -338,7 +354,7 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-[#030712] text-cyan-50 flex flex-col relative overflow-hidden bg-grid-pattern">
-      {/* 1. Futuristic Header HUD */}
+      {/* 1. Futuristic Header HUD with Supabase Status */}
       <Header
         state={assistantState}
         backendOnline={backendOnline}
@@ -347,6 +363,7 @@ export function App() {
         provider={aiProvider}
         fps={fps}
         isMuted={isMuted}
+        supabaseOnline={supabaseOnline}
         onToggleMute={() => setIsMuted(!isMuted)}
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
@@ -487,15 +504,14 @@ export function App() {
         }}
         pendingAction={pendingAction}
         agentToken={agentToken}
-        onActionCompleted={(success, message) => {
-          // Speak notification in Uzbek
+        onActionCompleted={(success) => {
           if (success) {
             speakText("Buyruq Windows tizimida muvaffaqiyatli bajarildi, Janob.");
           }
         }}
       />
 
-      {/* 4. Full Settings Modal */}
+      {/* 4. Full Settings Modal with Supabase configuration */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -507,6 +523,7 @@ export function App() {
         aiConfigured={aiConfigured}
         provider={aiProvider}
         model={aiModel}
+        supabaseOnline={supabaseOnline}
         agentToken={agentToken}
         onAgentTokenChange={setAgentToken}
       />

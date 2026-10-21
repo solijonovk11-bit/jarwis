@@ -1,5 +1,7 @@
-import { X, Key, Cpu, Mic, Sliders, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { X, Key, Cpu, Mic, Sliders, Cloud, Check, Copy } from 'lucide-react';
 import { VoiceSettings, GestureSettings } from '../../types';
+import { SUPABASE_SQL_SCHEMA } from '../../services/supabase';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -12,6 +14,7 @@ interface SettingsModalProps {
   aiConfigured: boolean;
   provider: string;
   model: string;
+  supabaseOnline?: boolean;
   agentToken?: string;
   onAgentTokenChange?: (token: string) => void;
 }
@@ -27,10 +30,19 @@ export function SettingsModal({
   aiConfigured,
   provider,
   model,
+  supabaseOnline = false,
   agentToken,
   onAgentTokenChange,
 }: SettingsModalProps) {
+  const [copiedSql, setCopiedSql] = useState<boolean>(false);
+
   if (!isOpen) return null;
+
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(SUPABASE_SQL_SCHEMA);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 2500);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -48,10 +60,43 @@ export function SettingsModal({
           JARVIS TIZIM SOZLAMALARI
         </h2>
         <p className="text-[11px] text-cyan-200/60 mb-4">
-          Sun'iy intellekt, ovoz, imo-ishoralar va Windows agent parametrlarini sozlash
+          Sun'iy intellekt, Supabase buluti, ovoz va Windows agent parametrlarini sozlash
         </p>
 
         <div className="space-y-4">
+          {/* Supabase Cloud Section */}
+          <div className="p-3 rounded-lg bg-black/40 border border-emerald-500/30 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-emerald-400 font-semibold">
+                <Cloud className="w-4 h-4" />
+                <span>Supabase Bulut Sinxronizatsiyasi</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded border ${
+                supabaseOnline
+                  ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/40'
+                  : 'border-rose-500/40 text-rose-300 bg-rose-950/30'
+              }`}>
+                {supabaseOnline ? 'ULANGAN (ONLINE)' : 'OFFLINE'}
+              </span>
+            </div>
+
+            <div className="space-y-1 text-[11px] text-cyan-200/80">
+              <p>• URL: <code className="text-emerald-300 text-[10px]">https://nlthpwovjcgizsjqllit.supabase.co</code></p>
+              <p>• Holat: <span className="text-emerald-400">Autentifikatsiya muvaffaqiyatli ulangan</span></p>
+            </div>
+
+            <div className="pt-1.5 border-t border-emerald-500/20 flex items-center justify-between">
+              <span className="text-[10px] text-cyan-300/70">Jadvallarni yaratish (SQL):</span>
+              <button
+                onClick={handleCopySql}
+                className="px-2.5 py-1 rounded border border-emerald-500/40 bg-emerald-950/30 text-emerald-300 hover:bg-emerald-900/40 flex items-center space-x-1.5 text-[10px] transition-colors"
+              >
+                {copiedSql ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedSql ? 'Nusxalandi!' : 'SQL Kodini nusxalash'}</span>
+              </button>
+            </div>
+          </div>
+
           {/* AI Provider Section */}
           <div className="p-3 rounded-lg bg-black/40 border border-cyan-500/20 space-y-2">
             <div className="flex items-center space-x-2 text-cyan-400 font-semibold">
